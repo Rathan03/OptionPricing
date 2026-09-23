@@ -15,8 +15,10 @@ namespace option_pricing
         private:
             const MarketData& market_data;
 
-        public:
             double d1(const Option& option) const;
             double d2(const Option& option) const;
+        
+        public:
+            double normal_cdf(double x) const;
     };
 }

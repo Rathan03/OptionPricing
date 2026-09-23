@@ -24,4 +24,9 @@ namespace option_pricing
     {
         return d1(option) - market_data.get_vol() * std::sqrt(actual_365(option));
     }
+
+    double BlackScholes::normal_cdf(double x) const
+    {
+        return 0.5 * std::erfc(- x / std::sqrt(2));
+    }
 }

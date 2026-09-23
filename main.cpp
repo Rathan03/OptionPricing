@@ -9,10 +9,10 @@ int main()
 {
     try
     {
-        Option option{OptionType::Call, 100, std::chrono::year_month_day{std::chrono::year{2027}, std::chrono::month{9}, std::chrono::day{23}}};
+        Option option{OptionType::Put, 100, std::chrono::year_month_day{std::chrono::year{2027}, std::chrono::month{9}, std::chrono::day{23}}};
         MarketData market_data{100,0.2,0.05, std::chrono::system_clock::now()};
         BlackScholes model{market_data};
-        std::cout << model.normal_cdf(-1) <<'\n';
+        std::cout << model.option_price(option) <<'\n';
 
     } catch (const std::exception& e)
     {

@@ -29,4 +29,18 @@ namespace option_pricing
     {
         return 0.5 * std::erfc(- x / std::sqrt(2));
     }
+
+    double BlackScholes::option_price(const Option& option) const
+    {   
+        double T = actual_365(option);
+        double d1 = this->d1(option);
+        double d2 = this->d2(option);
+
+        if (option.get_option_type() == OptionType::Call)
+        {
+            return market_data.get_spot() * normal_cdf(d1)-option.get_strike() * std::exp(- market_data.get_rate() * T) * normal_cdf(d2);
+        }
+
+        return option.get_strike() * std::exp(- market_data.get_rate() * T) * normal_cdf(-d2) - market_data.get_spot() * normal_cdf(-d1);
+    }
 }

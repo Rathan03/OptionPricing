@@ -17,8 +17,6 @@ namespace option_pricing
 
             double d1(const Option& option) const;
             double d2(const Option& option) const;
-        
-        public:
             double normal_cdf(double x) const;
     };
 }

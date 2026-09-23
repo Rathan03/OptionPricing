@@ -89,3 +89,185 @@ TEST(BlackScholes_Test, Put_Rho)
 {
     EXPECT_NEAR(model.rho(put), -41.8905, 1e-4);
 }
+
+TEST(BlackScholes_Test, Expiry_Call_InTheMoney)
+{
+    MarketData expiry_data{110, 0.2, 0.05, timestamp_current};
+    BlackScholes expiry_model{expiry_data};
+
+    Option expiry_call{
+        OptionType::Call,
+        100,
+        std::chrono::year_month_day{
+            std::chrono::year{2026},
+            std::chrono::month{9},
+            std::chrono::day{23}
+        }
+    };
+
+    EXPECT_DOUBLE_EQ(expiry_model.option_price(expiry_call), 10.0);
+}
+
+TEST(BlackScholes_Test, Expiry_Call_OutOfTheMoney)
+{
+    MarketData expiry_data{90, 0.2, 0.05, timestamp_current};
+    BlackScholes expiry_model{expiry_data};
+
+    Option expiry_call{
+        OptionType::Call,
+        100,
+        std::chrono::year_month_day{
+            std::chrono::year{2026},
+            std::chrono::month{9},
+            std::chrono::day{23}
+        }
+    };
+
+    EXPECT_DOUBLE_EQ(expiry_model.option_price(expiry_call), 0.0);
+}
+
+TEST(BlackScholes_Test, Expiry_Put_InTheMoney)
+{
+    MarketData expiry_data{90, 0.2, 0.05, timestamp_current};
+    BlackScholes expiry_model{expiry_data};
+
+    Option expiry_put{
+        OptionType::Put,
+        100,
+        std::chrono::year_month_day{
+            std::chrono::year{2026},
+            std::chrono::month{9},
+            std::chrono::day{23}
+        }
+    };
+
+    EXPECT_DOUBLE_EQ(expiry_model.option_price(expiry_put), 10.0);
+}
+
+TEST(BlackScholes_Test, Expiry_Put_OutOfTheMoney)
+{
+    MarketData expiry_data{110, 0.2, 0.05, timestamp_current};
+    BlackScholes expiry_model{expiry_data};
+
+    Option expiry_put{
+        OptionType::Put,
+        100,
+        std::chrono::year_month_day{
+            std::chrono::year{2026},
+            std::chrono::month{9},
+            std::chrono::day{23}
+        }
+    };
+
+    EXPECT_DOUBLE_EQ(expiry_model.option_price(expiry_put), 0.0);
+}
+
+TEST(BlackScholes_Test, Already_Expired)
+{
+    Option expired_call{
+        OptionType::Call,
+        100,
+        std::chrono::year_month_day{
+            std::chrono::year{2026},
+            std::chrono::month{9},
+            std::chrono::day{22}
+        }
+    };
+
+    EXPECT_THROW(
+        model.option_price(expired_call),
+        std::domain_error
+    );
+}
+
+TEST(BlackScholes_Test, Delta_At_Expiry)
+{
+    Option expiry_call{
+        OptionType::Call,
+        100,
+        std::chrono::year_month_day{
+            std::chrono::year{2026},
+            std::chrono::month{9},
+            std::chrono::day{23}
+        }
+    };
+
+    EXPECT_THROW(
+        model.delta(expiry_call),
+        std::invalid_argument
+    );
+}
+
+TEST(BlackScholes_Test, Delta_After_Expiry)
+{
+    Option expired_call{
+        OptionType::Call,
+        100,
+        std::chrono::year_month_day{
+            std::chrono::year{2026},
+            std::chrono::month{9},
+            std::chrono::day{22}
+        }
+    };
+
+    EXPECT_THROW(
+        model.delta(expired_call),
+        std::invalid_argument
+    );
+}
+
+TEST(BlackScholes_Test, Numerical_Delta)
+{
+    double h = 0.01;
+    MarketData market_data_minus_h{100-h,0.2,0.05, timestamp_current};
+    MarketData market_data_plus_h{100+h,0.2,0.05, timestamp_current};
+
+    BlackScholes model_minus_h{market_data_minus_h};
+    BlackScholes model_plus_h{market_data_plus_h};
+
+    EXPECT_NEAR((model_plus_h.option_price(call)- model_minus_h.option_price(call))/(2*h), model.delta(call), 1e-4);
+}
+
+TEST(BlackScholes_Test, Numerical_Gamma)
+{
+    double h = 0.01;
+    MarketData market_data_minus_h{100-h,0.2,0.05, timestamp_current};
+    MarketData market_data_plus_h{100+h,0.2,0.05, timestamp_current};
+
+    BlackScholes model_minus_h{market_data_minus_h};
+    BlackScholes model_plus_h{market_data_plus_h};
+
+    EXPECT_NEAR((model_plus_h.option_price(call)- 2 * model.option_price(call)+model_minus_h.option_price(call))/(h*h), model.gamma(call), 1e-4);
+}
+
+TEST(BlackScholes_Test, Deep_OTM)
+{
+    Option call_OTM{
+        OptionType::Call,
+        200,
+        std::chrono::year_month_day{
+            std::chrono::year{2027},
+            std::chrono::month{9},
+            std::chrono::day{23}
+        }
+    };
+
+    EXPECT_TRUE(std::isfinite(model.option_price(call_OTM)));
+    EXPECT_TRUE(model.option_price(call_OTM) >= 0);
+}
+
+TEST(BlackScholes_Test, Deep_ITM)
+{
+    Option put_ITM{
+        OptionType::Put,
+        50,
+        std::chrono::year_month_day{
+            std::chrono::year{2027},
+            std::chrono::month{9},
+            std::chrono::day{23}
+        }
+    };
+
+    EXPECT_TRUE(std::isfinite(model.option_price(put_ITM)));
+    EXPECT_TRUE(model.option_price(put_ITM) >= 0);
+}

@@ -2,6 +2,7 @@
 
 #include <numbers>
 #include <cmath>
+#include <algorithm>
 
 namespace option_pricing
 {
@@ -21,9 +22,17 @@ namespace option_pricing
         return (std::log(market_data.get_spot()/option.get_strike()) + (market_data.get_rate() + 0.5 * vol * vol) * T) / (vol * std::sqrt(T));
     }
 
-    double BlackScholes::d2(const Option& option) const
+    BlackScholes::ComputationParameters BlackScholes::calculate_parameters(const Option& option) const
     {
-        return d1(option) - market_data.get_vol() * std::sqrt(actual_365(option));
+        ComputationParameters params;
+        params.T = actual_365(option);
+        if (params.T <=0)
+        {
+            throw std::invalid_argument("Option has already expired.");
+        }
+        params.d1 = (std::log(market_data.get_spot()/option.get_strike()) + (market_data.get_rate() + 0.5 * market_data.get_vol() * market_data.get_vol()) * params.T) / (market_data.get_vol() * std::sqrt(params.T));
+        params.d2 = params.d1 - market_data.get_vol() * std::sqrt(params.T);
+        return params;
     }
 
     double BlackScholes::normal_cdf(double x) const
@@ -39,8 +48,17 @@ namespace option_pricing
     double BlackScholes::option_price(const Option& option) const
     {   
         double T = actual_365(option);
-        double d1 = this->d1(option);
-        double d2 = this->d2(option);
+
+        if (T<0)
+        {
+            throw std::domain_error("Option has already expired in the past");
+        } else if (T == 0)
+        {
+            int put_call_sign = option.get_option_type() == OptionType::Call ? 1 : -1;
+            return std::max(put_call_sign * (market_data.get_spot()-option.get_strike()),.0);
+        }
+
+        auto [_,d1,d2] = calculate_parameters(option);
 
         if (option.get_option_type() == OptionType::Call)
         {
@@ -54,36 +72,42 @@ namespace option_pricing
 
     double BlackScholes::delta(const Option& option) const
     {
+        auto [T, d1, d2] = calculate_parameters(option);
         if (option.get_option_type() == OptionType::Call)
         {
-            return normal_cdf(d1(option));
+            return normal_cdf(d1);
         }
 
-        return -normal_cdf(-d1(option));
+        return -normal_cdf(-d1);
     }
 
     double BlackScholes::gamma(const Option& option) const
     {
-        return normal_pdf(d1(option))/(market_data.get_spot() * market_data.get_vol() * std::sqrt(actual_365(option)));
+        auto [T,d1,d2] = calculate_parameters(option);
+        return normal_pdf(d1)/(market_data.get_spot() * market_data.get_vol() * std::sqrt(T));
     }
 
     double BlackScholes::vega(const Option& option) const
-    {
-        return normal_pdf(d1(option)) * market_data.get_spot() * std::sqrt(actual_365(option));
+    {   
+        auto [T,d1,d2] = calculate_parameters(option);
+        return normal_pdf(d1) * market_data.get_spot() * std::sqrt(T);
     }
 
     double BlackScholes::theta(const Option& option) const
     {   
         int sign = option.get_option_type() == OptionType::Call ? 1 : -1;
+        auto [T,d1,d2] = calculate_parameters(option);
 
-        return -(market_data.get_spot() * normal_pdf(d1(option)) * market_data.get_vol())/(2 * std::sqrt(actual_365(option)))
-               - sign * market_data.get_rate() * option.get_strike() * std::exp(- market_data.get_rate() * actual_365(option)) * normal_cdf(sign * d2(option));
+        return -(market_data.get_spot() * normal_pdf(d1) * market_data.get_vol())/(2 * std::sqrt(T))
+               - sign * market_data.get_rate() * option.get_strike() * std::exp(- market_data.get_rate() * T) * normal_cdf(sign * d2);
     }
 
     double BlackScholes::rho(const Option& option) const
     {   
         int sign = option.get_option_type() == OptionType::Call ? 1 : -1;
+        auto [T,d1,d2] = calculate_parameters(option);
 
-        return sign * option.get_strike() * actual_365(option) * std::exp(- market_data.get_rate() * actual_365(option)) * normal_cdf(sign * d2(option));
+        return sign * option.get_strike() * T * std::exp(- market_data.get_rate() * T) * normal_cdf(sign * d2);
     }
+
 }

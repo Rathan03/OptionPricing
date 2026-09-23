@@ -3,7 +3,7 @@
 #include "option_pricing/option.h"
 
 namespace option_pricing
-{
+{  
     class BlackScholes
     {
         public:
@@ -22,8 +22,16 @@ namespace option_pricing
             const MarketData& market_data;
 
             double d1(const Option& option) const;
-            double d2(const Option& option) const;
             double normal_cdf(double x) const;
             double normal_pdf(double x) const;
+            
+            struct ComputationParameters
+            {
+                double T;
+                double d1;
+                double d2;
+            };
+            ComputationParameters calculate_parameters(const Option& option) const;
     };
 }
+

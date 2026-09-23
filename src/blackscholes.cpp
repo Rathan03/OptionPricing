@@ -1,5 +1,6 @@
 #include "option_pricing/blackscholes.h"
 
+#include <numbers>
 #include <cmath>
 
 namespace option_pricing
@@ -30,6 +31,11 @@ namespace option_pricing
         return 0.5 * std::erfc(- x / std::sqrt(2));
     }
 
+    double BlackScholes::normal_pdf(double x) const
+    {
+        return (1/(std::sqrt(2 * std::numbers::pi))) * std::exp(-0.5 * x * x);
+    }
+
     double BlackScholes::option_price(const Option& option) const
     {   
         double T = actual_365(option);
@@ -42,5 +48,42 @@ namespace option_pricing
         }
 
         return option.get_strike() * std::exp(- market_data.get_rate() * T) * normal_cdf(-d2) - market_data.get_spot() * normal_cdf(-d1);
+    }
+
+    // Greeks
+
+    double BlackScholes::delta(const Option& option) const
+    {
+        if (option.get_option_type() == OptionType::Call)
+        {
+            return normal_cdf(d1(option));
+        }
+
+        return -normal_cdf(-d1(option));
+    }
+
+    double BlackScholes::gamma(const Option& option) const
+    {
+        return normal_pdf(d1(option))/(market_data.get_spot() * market_data.get_vol() * std::sqrt(actual_365(option)));
+    }
+
+    double BlackScholes::vega(const Option& option) const
+    {
+        return normal_pdf(d1(option)) * market_data.get_spot() * std::sqrt(actual_365(option));
+    }
+
+    double BlackScholes::theta(const Option& option) const
+    {   
+        int sign = option.get_option_type() == OptionType::Call ? 1 : -1;
+
+        return -(market_data.get_spot() * normal_pdf(d1(option)) * market_data.get_vol())/(2 * std::sqrt(actual_365(option)))
+               - sign * market_data.get_rate() * option.get_strike() * std::exp(- market_data.get_rate() * actual_365(option)) * normal_cdf(sign * d2(option));
+    }
+
+    double BlackScholes::rho(const Option& option) const
+    {   
+        int sign = option.get_option_type() == OptionType::Call ? 1 : -1;
+
+        return sign * option.get_strike() * actual_365(option) * std::exp(- market_data.get_rate() * actual_365(option)) * normal_cdf(sign * d2(option));
     }
 }

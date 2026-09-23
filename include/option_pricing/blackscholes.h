@@ -11,6 +11,12 @@ namespace option_pricing
 
             double actual_365(const Option& option) const;
             double option_price(const Option& option) const;
+
+            double delta(const Option& option) const;
+            double gamma(const Option& option) const;
+            double vega(const Option& option) const;
+            double theta(const Option& option) const;
+            double rho(const Option& option) const;
         
         private:
             const MarketData& market_data;
@@ -18,5 +24,6 @@ namespace option_pricing
             double d1(const Option& option) const;
             double d2(const Option& option) const;
             double normal_cdf(double x) const;
+            double normal_pdf(double x) const;
     };
 }

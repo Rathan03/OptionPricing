@@ -23,6 +23,7 @@ add_executable(
     OptionPricingTests
     tests/option_tests.cpp
     tests/marketdata_tests.cpp
+    tests/blackscholes_tests.cpp
     src/option.cpp
     src/marketdata.cpp
     src/blackscholes.cpp

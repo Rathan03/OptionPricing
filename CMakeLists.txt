@@ -4,6 +4,6 @@ project(OptionPricing)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(OptionPricing main.cpp src/option.cpp)
+add_executable(OptionPricing main.cpp src/option.cpp src/marketdata.cpp src/blackscholes.cpp)
 
 target_include_directories(OptionPricing PUBLIC include)

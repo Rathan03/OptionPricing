@@ -37,4 +37,11 @@ namespace option_pricing
     {
         return expiry;
     }
+
+    std::chrono::days Option::days_to_expiry(std::chrono::system_clock::time_point timestamp) const
+    {
+        std::chrono::sys_days expiry_days{expiry};
+        std::chrono::sys_days valuation_days{std::chrono::floor<std::chrono::days>(timestamp)};
+        return expiry_days - valuation_days;
+    }
 }

@@ -194,7 +194,7 @@ TEST(BlackScholes_Test, Delta_At_Expiry)
 
     EXPECT_THROW(
         model.delta(expiry_call),
-        std::invalid_argument
+        std::domain_error
     );
 }
 
@@ -212,7 +212,7 @@ TEST(BlackScholes_Test, Delta_After_Expiry)
 
     EXPECT_THROW(
         model.delta(expired_call),
-        std::invalid_argument
+        std::domain_error
     );
 }
 
@@ -240,7 +240,7 @@ TEST(BlackScholes_Test, Numerical_Gamma)
     EXPECT_NEAR((model_plus_h.option_price(call)- 2 * model.option_price(call)+model_minus_h.option_price(call))/(h*h), model.gamma(call), 1e-4);
 }
 
-TEST(BlackScholes_Test, Deep_OTM)
+TEST(BlackScholes_Test, Deep_Call_OTM)
 {
     Option call_OTM{
         OptionType::Call,
@@ -256,9 +256,9 @@ TEST(BlackScholes_Test, Deep_OTM)
     EXPECT_TRUE(model.option_price(call_OTM) >= 0);
 }
 
-TEST(BlackScholes_Test, Deep_ITM)
+TEST(BlackScholes_Test, Deep_Put_OTM)
 {
-    Option put_ITM{
+    Option put_OTM{
         OptionType::Put,
         50,
         std::chrono::year_month_day{
@@ -268,6 +268,6 @@ TEST(BlackScholes_Test, Deep_ITM)
         }
     };
 
-    EXPECT_TRUE(std::isfinite(model.option_price(put_ITM)));
-    EXPECT_TRUE(model.option_price(put_ITM) >= 0);
+    EXPECT_TRUE(std::isfinite(model.option_price(put_OTM)));
+    EXPECT_TRUE(model.option_price(put_OTM) >= 0);
 }

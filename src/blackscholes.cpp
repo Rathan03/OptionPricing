@@ -3,6 +3,7 @@
 #include <numbers>
 #include <cmath>
 #include <algorithm>
+#include <stdexcept>
 
 namespace option_pricing
 {
@@ -13,14 +14,7 @@ namespace option_pricing
     double BlackScholes::actual_365(const Option& option) const
     {
         return static_cast<double>(option.days_to_expiry(market_data.get_timestamp()).count())/365.0;
-    }
-
-    double BlackScholes::d1(const Option& option) const
-    {
-        double vol = market_data.get_vol();
-        double T = actual_365(option);
-        return (std::log(market_data.get_spot()/option.get_strike()) + (market_data.get_rate() + 0.5 * vol * vol) * T) / (vol * std::sqrt(T));
-    }
+    }    
 
     BlackScholes::ComputationParameters BlackScholes::calculate_parameters(const Option& option) const
     {
@@ -28,7 +22,7 @@ namespace option_pricing
         params.T = actual_365(option);
         if (params.T <=0)
         {
-            throw std::invalid_argument("Option has already expired.");
+            throw std::domain_error("Option has already expired.");
         }
         params.d1 = (std::log(market_data.get_spot()/option.get_strike()) + (market_data.get_rate() + 0.5 * market_data.get_vol() * market_data.get_vol()) * params.T) / (market_data.get_vol() * std::sqrt(params.T));
         params.d2 = params.d1 - market_data.get_vol() * std::sqrt(params.T);
@@ -55,7 +49,7 @@ namespace option_pricing
         } else if (T == 0)
         {
             int put_call_sign = option.get_option_type() == OptionType::Call ? 1 : -1;
-            return std::max(put_call_sign * (market_data.get_spot()-option.get_strike()),.0);
+            return std::max(put_call_sign * (market_data.get_spot()-option.get_strike()),0.0);
         }
 
         auto [_,d1,d2] = calculate_parameters(option);

@@ -21,7 +21,6 @@ namespace option_pricing
         private:
             const MarketData& market_data;
 
-            double d1(const Option& option) const;
             double normal_cdf(double x) const;
             double normal_pdf(double x) const;
             
